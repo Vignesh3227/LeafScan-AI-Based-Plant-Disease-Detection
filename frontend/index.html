@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeafScan — Plant Disease Detection</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>" />
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+      </svg>
+    </div>
+    <span class="logo-text">Leaf<span>Scan</span></span>
+  </div>
+
+  <nav>
+    <a href="#upload" class="active">Diagnose</a>
+    <a href="#results">Results</a>
+    <a href="#marketplace">Marketplace</a>
+  </nav>
+
+  <div class="header-badge">EfficientNet-B0</div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag">AI-Powered Plant Pathology</div>
+  <h1>Detect plant disease<br>with <em>precision</em></h1>
+  <p>Upload a leaf image and receive an instant AI diagnosis — including disease identification, treatment protocols, and agronomic recommendations.</p>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-value">38</span>
+      <span class="stat-label">Disease Classes</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">54k</span>
+      <span class="stat-label">Training Images</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">14</span>
+      <span class="stat-label">Crop Species</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">ENet-B0</span>
+      <span class="stat-label">Architecture</span>
+    </div>
+  </div>
+</section>
+
+<!-- UPLOAD -->
+<section class="upload-section" id="upload">
+  <h2 class="section-title">Upload Leaf Image</h2>
+  <p class="section-subtitle">Supports JPG, PNG, WEBP — Max 20MB. For best results, capture the affected leaf clearly against a neutral background.</p>
+
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <p class="upload-title">Drop your leaf image here</p>
+    <p class="upload-hint">or click to browse your files</p>
+    <div class="upload-formats">
+      <span class="format-tag">JPG</span>
+      <span class="format-tag">PNG</span>
+      <span class="format-tag">WEBP</span>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" />
+  </div>
+
+  <!-- IMAGE PREVIEW -->
+  <div class="image-preview-wrap" id="previewWrap">
+    <div class="preview-header">
+      <span>Selected Image</span>
+      <button class="btn btn-ghost btn-sm" id="clearBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Clear
+      </button>
+    </div>
+    <div class="preview-body">
+      <div class="preview-img-box full" id="previewImgBox">
+        <label>Preview</label>
+        <img id="previewImg" src="" alt="Leaf preview" />
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-primary" id="analyzeBtn" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Run Analysis
+      </button>
+      <label class="gradcam-toggle" title="Generate a Grad-CAM heat map showing which regions the model focused on">
+        <input type="checkbox" id="gradcamCheck" />
+        <span class="toggle-track"></span>
+        <span class="toggle-label">Grad-CAM</span>
+      </label>
+    </div>
+  </div>
+</section>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <h3>Analyzing Leaf</h3>
+    <p>Running inference on EfficientNet-B0</p>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1">
+        <div class="step-dot"></div>
+        Preprocessing image
+      </div>
+      <div class="loading-step" id="step2">
+        <div class="step-dot"></div>
+        Extracting features
+      </div>
+      <div class="loading-step" id="step3">
+        <div class="step-dot"></div>
+        Classifying disease
+      </div>
+      <div class="loading-step" id="step4">
+        <div class="step-dot"></div>
+        Generating recommendations
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<section class="results-section" id="results">
+  <div class="results-header">
+    <div>
+      <h2 class="section-title">Analysis Results</h2>
+      <p class="section-subtitle" id="resultSubtitle"></p>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="resetBtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.52"/>
+      </svg>
+      New Analysis
+    </button>
+  </div>
+
+  <div class="demo-banner" id="demoBanner">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    Demo mode: No trained model found. Showing simulated prediction — train the model first for real results.
+  </div>
+
+  <!-- Grad-CAM comparison row -->
+  <div class="gradcam-row" id="gradcamRow">
+    <div class="img-card">
+      <div class="img-card-header">Original Image</div>
+      <img id="resultOriginal" src="" alt="Original" />
+    </div>
+    <div class="img-card">
+      <div class="img-card-header">Grad-CAM Activation</div>
+      <img id="resultGradcam" src="" alt="Grad-CAM" />
+    </div>
+  </div>
+
+  <div class="results-grid" id="resultsGrid">
+    <!-- Prediction card -->
+    <div class="prediction-card">
+      <div class="card-header">
+        <span class="card-label">Diagnosis</span>
+        <span class="severity-badge" id="severityBadge">—</span>
+      </div>
+      <div class="card-body">
+        <div class="plant-name" id="plantName">—</div>
+        <div class="disease-name" id="diseaseName">—</div>
+
+        <div class="confidence-block">
+          <div class="confidence-label">
+            <span>Confidence Score</span>
+            <span class="confidence-value" id="confidenceText">—</span>
+          </div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="confidenceFill"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim);">Top Predictions</div>
+        <div class="top5-list" id="top5List"></div>
+      </div>
+    </div>
+
+    <!-- Recommendation card -->
+    <div class="rec-card">
+      <div class="card-header">
+        <span class="card-label">Clinical Recommendation</span>
+      </div>
+      <div class="rec-body">
+        <p class="rec-description" id="recDescription">—</p>
+        <div class="rec-sections">
+          <div class="rec-section">
+            <h4>Treatment</h4>
+            <ul class="rec-list" id="recTreatment"></ul>
+          </div>
+          <div class="rec-section">
+            <h4>Prevention</h4>
+            <ul class="rec-list" id="recPrevention"></ul>
+          </div>
+          <div class="rec-section" id="causesSectionWrap">
+            <h4>Causes</h4>
+            <ul class="rec-list" id="recCauses"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKETPLACE -->
+<section class="marketplace-section" id="marketplace">
+  <h2 class="section-title">Recommended Products</h2>
+  <p class="section-subtitle" id="marketSubtitle">Products selected based on the detected disease</p>
+  <div class="products-grid" id="productsGrid"></div>
+</section>
+
+<!-- ERROR TOAST -->
+<div class="toast" id="errorToast"></div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-left">LeafScan — Plant Disease Detection System &copy; 2024</span>
+  <div class="footer-right">
+    <a href="/docs" target="_blank">API Docs</a>
+    <a href="https://www.kaggle.com/datasets/mohitsingh1804/plantvillage" target="_blank">Dataset</a>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

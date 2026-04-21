@@ -1,0 +1,5 @@
+# Ignore all dataset contents under PlantVillage
+*
+
+# Keep this .gitignore file tracked
+!.gitignore

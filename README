@@ -1,0 +1,199 @@
+# LeafScan — Plant Disease Detection System
+
+AI-powered plant disease detection using EfficientNet-B0 transfer learning on the PlantVillage dataset (38 classes, ~54k images).
+
+---
+
+## Architecture Overview
+
+```
+plant-disease-detection/
+├── model/
+│   ├── train.py              # Training pipeline (EfficientNet-B0, AMP, cosine LR)
+│   ├── evaluate.py           # Evaluation: confusion matrix, per-class accuracy, history plots
+│   ├── gradcam.py            # Grad-CAM visualization using PyTorch hooks
+│   ├── class_names.json      # 38 PlantVillage class labels
+│   └── saved/                # Saved model artifacts (after training)
+│       ├── plant_disease_model.pt
+│       ├── class_names.json
+│       └── history.json
+├── backend/
+│   ├── main.py               # FastAPI application, API routes, static file serving
+│   ├── inference.py          # Model loading, preprocessing, prediction
+│   ├── recommendations.py    # Disease recommendation engine (38 classes, full detail)
+│   ├── marketplace.py        # Mock product catalog and disease-to-product mapping
+│   └── requirements.txt      # Backend Python dependencies
+├── frontend/
+│   ├── index.html            # Single-page application
+│   ├── styles.css            # Dark botanical theme, glassmorphism, responsive
+│   └── app.js                # Drag-drop upload, API calls, result rendering
+├── data/
+│   └── README.md             # Dataset download instructions
+└── requirements.txt          # Training dependencies
+```
+
+---
+
+## Model Architecture
+
+- **Base model**: EfficientNet-B0 (ImageNet pretrained via torchvision)
+- **Strategy**: Two-phase fine-tuning
+  - Phase 1 (epochs 1–10): Freeze backbone, train custom head only
+  - Phase 2 (epochs 11–30): Unfreeze full model with lower learning rate
+- **Custom head**: `Dropout(0.4) → Linear(1280→512) → SiLU → Dropout(0.3) → Linear(512→38)`
+- **Training**: AdamW + CosineAnnealingLR + Mixed Precision (AMP) + Label Smoothing
+- **Augmentation**: RandomResizedCrop, Flips, Rotation, ColorJitter, RandomGrayscale
+- **Input size**: 224×224
+
+---
+
+## Setup Instructions
+
+### 1. Clone and create environment
+
+```bash
+git clone <repo>
+cd plant-disease-detection
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+```
+
+### 2. Download dataset
+
+```bash
+pip install kaggle
+# Place your kaggle.json API key in ~/.kaggle/
+kaggle datasets download -d mohitsingh1804/plantvillage -p ./data
+unzip ./data/plantvillage.zip -d ./data/
+```
+
+### 3. Train the model
+
+```bash
+pip install -r requirements.txt
+cd model
+DATA_DIR=../data/PlantVillage MODEL_DIR=./saved python train.py
+```
+
+Training with a GPU (RTX 3080+) takes approximately 30–60 minutes for 30 epochs.
+On CPU, reduce epochs in `train.py` or use a smaller batch size.
+
+### 4. Evaluate the model (optional)
+
+```bash
+DATA_DIR=../data/PlantVillage MODEL_PATH=./saved/plant_disease_model.pt OUTPUT_DIR=./evaluation python evaluate.py
+```
+
+This generates:
+- `confusion_matrix.png`
+- `training_history.png`
+- `per_class_accuracy.png`
+- `classification_report.txt`
+
+### 5. Start the backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+# API running at http://localhost:8000
+# Swagger UI at http://localhost:8000/docs
+```
+
+The backend automatically serves the frontend at `http://localhost:8000`.
+
+### 6. (Optional) Standalone frontend
+
+Open `frontend/index.html` directly in a browser while the backend is running.
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Serves the web application |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/predict` | Predict disease from uploaded image |
+| `GET` | `/api/products` | List all marketplace products |
+| `GET` | `/api/products/{id}` | Get single product |
+| `GET` | `/api/classes` | List all 38 class names |
+
+### Predict endpoint
+
+```bash
+curl -X POST http://localhost:8000/api/predict \
+  -F "file=@leaf.jpg" \
+  -F "gradcam=true"
+```
+
+Response:
+```json
+{
+  "prediction": {
+    "plant": "Tomato",
+    "disease": "Late blight",
+    "is_healthy": false,
+    "confidence": 0.9342,
+    "raw_class": "Tomato___Late_blight",
+    "top5": [...]
+  },
+  "recommendation": {
+    "description": "...",
+    "causes": [...],
+    "treatment": [...],
+    "prevention": [...],
+    "severity": "critical"
+  },
+  "products": [...],
+  "images": {
+    "original": "data:image/jpeg;base64,...",
+    "gradcam": "data:image/jpeg;base64,..."
+  }
+}
+```
+
+---
+
+## Demo Mode
+
+If no trained model is found at the expected path, the backend runs in **demo mode** — returning a random prediction with simulated confidence values. This allows testing the full UI without a trained model.
+
+The frontend displays a warning banner when demo mode is active.
+
+---
+
+## Features
+
+- **38-class classification** across 14 crop species
+- **Transfer learning** with two-phase fine-tuning strategy
+- **Grad-CAM** heat map visualization showing model attention regions
+- **Full recommendation engine** with description, causes, treatment, and prevention for all 38 classes
+- **Mock marketplace** with 15 products, disease-to-product mapping, and category filtering
+- **Dark botanical UI** with drag-drop upload, confidence visualization, and top-5 predictions
+- **Responsive design** — mobile-friendly layout
+
+---
+
+## Performance Expectations
+
+Typical performance on PlantVillage test set:
+
+| Metric | Value |
+|--------|-------|
+| Test Accuracy | ~96–98% |
+| Top-5 Accuracy | ~99.5%+ |
+| Inference time (GPU) | ~15ms |
+| Inference time (CPU) | ~150–400ms |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Model | PyTorch 2.3, EfficientNet-B0, torchvision |
+| Backend | FastAPI, Uvicorn, Pillow, OpenCV |
+| Frontend | HTML5, CSS3, Vanilla JS |
+| Visualization | Matplotlib, Seaborn |
+| Evaluation | scikit-learn |

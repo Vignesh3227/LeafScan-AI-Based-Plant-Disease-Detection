@@ -1,0 +1,30 @@
+# Data Directory
+
+Download the PlantVillage dataset from Kaggle:
+
+**URL**: https://www.kaggle.com/datasets/mohitsingh1804/plantvillage
+
+## Setup
+
+```bash
+pip install kaggle
+kaggle datasets download -d mohitsingh1804/plantvillage -p ./data
+unzip ./data/plantvillage.zip -d ./data/
+```
+
+## Expected Structure
+
+```
+data/
+└── PlantVillage/
+    ├── Apple___Apple_scab/
+    ├── Apple___Black_rot/
+    ├── Apple___Cedar_apple_rust/
+    ├── Apple___healthy/
+    ├── Blueberry___healthy/
+    ...  (38 class folders total)
+    └── Tomato___healthy/
+```
+
+Each folder contains leaf images in JPG format.
+The dataset contains approximately 54,306 images across 38 disease/healthy classes for 14 crop species.
