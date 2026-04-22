@@ -8,9 +8,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms, models
 from PIL import Image
+import os
 
-MODEL_PATH = os.environ.get("MODEL_PATH", "../model/saved/plant_disease_model.pt")
-CLASS_NAMES_PATH = os.environ.get("CLASS_NAMES_PATH", "../model/class_names.json")
+# Get the directory where inference.py is located
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_PATH = os.path.join(CURRENT_DIR, "..", "model", "saved", "plant_disease_model.pt")
+# inference.py (Correct)
+
+
+# Build the path dynamically: go up one level, then into the 'model' folder
+CLASS_NAMES_PATH = os.path.join(CURRENT_DIR, "..", "model", "class_names.json")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = 224
 
@@ -73,7 +81,8 @@ def parse_class_name(raw: str) -> tuple[str, str]:
     return plant, disease
 
 
-@torch.no_grad()
+
+# 1. REMOVE the @torch.no_grad() decorator from here!
 def predict(image: Image.Image, use_gradcam: bool = False) -> dict:
     model, class_names = load_model()
 
@@ -97,10 +106,12 @@ def predict(image: Image.Image, use_gradcam: bool = False) -> dict:
             "demo_mode": True,
         }
 
-    tensor = preprocess_image(image)
-    output = model(tensor)
-    probs = F.softmax(output, dim=1)[0]
-    top5_vals, top5_idxs = torch.topk(probs, 5)
+    # 2. Use the context manager ONLY for the initial prediction to save memory
+    with torch.no_grad():
+        tensor = preprocess_image(image)
+        output = model(tensor)
+        probs = F.softmax(output, dim=1)[0]
+        top5_vals, top5_idxs = torch.topk(probs, 5)
 
     idx = top5_idxs[0].item()
     confidence = top5_vals[0].item()
@@ -117,6 +128,9 @@ def predict(image: Image.Image, use_gradcam: bool = False) -> dict:
         try:
             sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "model"))
             from gradcam import get_gradcam_b64
+            
+            # 3. Because we are no longer trapped in a global no_grad() block,
+            # this function can now safely compute the gradients it needs!
             gradcam_b64 = get_gradcam_b64(model, preprocess_image(image), image, idx)
         except Exception as e:
             print(f"Grad-CAM failed: {e}")

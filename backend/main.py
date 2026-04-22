@@ -8,15 +8,26 @@ from fastapi.responses import HTMLResponse, FileResponse
 from PIL import Image
 from pydantic import BaseModel
 from typing import Optional
-
+from contextlib import asynccontextmanager
 from inference import predict, load_model
 from recommendations import get_recommendation
 from marketplace import get_products_for_disease, get_all_products
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup logic ---
+    load_model()
+    print("Model loaded and ready.")
+    
+    yield  # This tells FastAPI to run the app now
+    
+    # --- Shutdown logic (optional) ---
+    # You can leave this blank or add cleanup code here later
 app = FastAPI(
     title="Plant Disease Detection API",
     description="AI-powered plant disease detection using EfficientNet-B0",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -31,11 +42,8 @@ FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 if os.path.exists(FRONTEND_DIR):
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
+# ADD THIS NEW CODE
 
-@app.on_event("startup")
-async def startup():
-    load_model()
-    print("Model loaded and ready.")
 
 
 @app.get("/", response_class=HTMLResponse)
